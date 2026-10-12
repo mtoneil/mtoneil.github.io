@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Workouts">
+<meta name="theme-color" content="#ebedee">
+<title>Workout Tracker</title>
+<style>
+:root{
+  --bg:#ebedee; --card:#fbfbfb; --text:#1e2327; --muted:#687176; --line:#d6dadc;
+  --live:#d9480f; --live-text:#fff; --accent:#3f4a52; --accent-weak:#e2e6e8; --accent-text:#ffffff; --link:#4d6b73;
+  --ok:#3f7a56; --ok-weak:#dcebe1; --part:#9a661a; --part-weak:#f3e6cf;
+  --skip:#747c81; --skip-weak:#e3e6e7; --bad:#b4443c;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#121415; --card:#1a1d1f; --text:#e6e9ea; --muted:#8a9398; --line:#2a2f32;
+    --live:#ff9f4a; --live-text:#121415; --accent:#cfd6da; --accent-weak:#262c30; --accent-text:#121415; --link:#9fbcc4;
+    --ok:#6fbf8b; --ok-weak:#17281e; --part:#dfaa5f; --part-weak:#30260f;
+    --skip:#98a1a6; --skip-weak:#23282b; --bad:#ee8279;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-variant-numeric:tabular-nums}
+#app{max-width:680px;margin:0 auto;padding:14px 14px calc(92px + env(safe-area-inset-bottom))}
+h1{font-size:28px;line-height:1.1;margin:6px 0 14px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:17px;margin:0 0 8px;font-weight:700}
+h3{font-size:19px;margin:0;font-weight:800;letter-spacing:-.01em}
+p{margin:0 0 8px}
+.muted{color:var(--muted)} .small{font-size:13px}
+.between{justify-content:space-between}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;align-items:center}
+.wrap{flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:0 0 12px}
+.btn{min-height:44px;padding:0 16px;border-radius:8px;background:var(--accent);color:var(--accent-text);font-weight:700}
+.btn.sec{background:var(--accent-weak);color:var(--text)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);font-weight:600}
+.btn.danger{background:transparent;border:1px solid var(--line);color:var(--bad);font-weight:600}
+.btn.sm{min-height:36px;padding:0 12px;font-size:14px}
+.btn.block{width:100%}
+.btn.full{flex:1 1 100%}
+.inp{width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit;font-size:16px}
+textarea.inp{min-height:76px;resize:vertical}
+.inp.num{width:64px;text-align:center;padding:8px 4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex:none}
+.seg button{min-height:36px;padding:0 13px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--accent);color:var(--accent-text)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--accent-weak);color:var(--text)}
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--skip-weak);color:var(--skip)}
+.badge.done{background:var(--ok-weak);color:var(--ok)}
+.badge.open{background:var(--live);color:var(--live-text)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:13px;padding:3px 10px;border-radius:99px;background:var(--accent-weak)}
+.chip b{font-weight:800}
+.caption{font-size:13px;color:var(--muted);margin:8px 0 0}
+
+/* week strip */
+.strip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 12px}
+.day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 6px;border-radius:8px;border:1px solid transparent;color:var(--muted)}
+.day .dn{font-size:12px;font-weight:600}
+.day .dd{font-size:18px;font-weight:800;color:var(--text)}
+.day.today .dd{color:var(--link)}
+.day.on{background:var(--card);border-color:var(--line)}
+.dots{display:flex;gap:3px;height:8px}
+.dot{width:8px;height:8px;border-radius:50%;border:2px solid var(--skip);background:transparent}
+.dot.done{background:var(--ok);border-color:var(--ok)}
+.dot.open{background:var(--accent);border-color:var(--accent)}
+
+/* cards */
+.slot-h{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.slot-h b{font-size:17px}
+.lines{margin:6px 0 10px;padding:0;list-style:none;font-size:14px;color:var(--muted)}
+.lines li{padding:2px 0}
+.lines b{color:var(--text);font-weight:600}
+.lines li.sk{text-decoration:line-through;opacity:.6}
+.lines .nt{color:var(--muted);font-weight:400}
+.mk{display:inline-block;width:1.3em;color:var(--ok);font-weight:700}
+.mk.partial{color:var(--part)}
+.mk.skipped{color:var(--skip)}
+
+/* session */
+.gsec{margin:0 0 6px}
+.gsec.nested{margin:10px 0 0;padding-left:10px;border-left:3px solid var(--line)}
+.gh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+.gh h3{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.subhead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:800;font-size:16px;margin:0 0 6px}
+.cap{font-size:13px;color:var(--muted);margin:-4px 0 8px}
+.ex{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 8px}
+.ex.s-done{border-color:var(--ok)}
+.ex.s-partial{border-color:var(--part)}
+.ex.s-skipped{opacity:.75}
+.ex-name{font-weight:700;font-size:17px}
+.ex-guide{font-size:14px;color:var(--muted)}
+.st{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 8px}
+.st button{min-height:42px;border-radius:8px;border:1px solid var(--line);font-weight:700;font-size:14px;color:var(--muted)}
+.st button.on[data-st="done"]{background:var(--ok);border-color:var(--ok);color:var(--accent-text)}
+.st button.on[data-st="partial"]{background:var(--part);border-color:var(--part);color:var(--accent-text)}
+.st button.on[data-st="skipped"]{background:var(--skip);border-color:var(--skip);color:var(--accent-text)}
+.link{color:var(--link);font-weight:700;font-size:13px;padding:6px 4px}
+.progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin:2px 0 14px}
+.progress i{display:block;height:100%;background:var(--ok)}
+.trend{margin-top:6px;font-size:13px;color:var(--muted)}
+.trend .tl{display:flex;align-items:center;gap:8px}
+.trend .tg{flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.trend u{text-decoration:none;color:var(--link);font-weight:700}
+.trend ul{list-style:none;margin:6px 0 0;padding:0 0 0 2px;border-left:2px solid var(--line)}
+.trend li{display:flex;gap:10px;padding:3px 0 3px 10px}
+.trend time{flex:none;width:50px}
+.trend li span{min-width:0;overflow-wrap:anywhere}
+
+/* calendar grid */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;align-items:stretch}
+.cal .hd{font-size:11px;font-weight:700;color:var(--muted);text-align:center;padding:2px 0}
+.cal-c{position:relative;display:flex;align-items:center;justify-content:center;min-height:58px;padding:13px 1px 12px;border-radius:7px;background:var(--card);border:1px solid var(--line)}
+.cal-c .cn{position:absolute;top:2px;left:4px;font-size:9px;color:var(--muted)}
+.cal-c .cc{display:flex;flex-wrap:wrap;gap:2px;justify-content:center}
+.cal-c.today{border-color:var(--text)}
+.cal-c.future{background:transparent;border-style:dashed}
+.cg{font-style:normal;font-size:11px;font-weight:800;line-height:1;padding:2px 3px;border-radius:4px;background:var(--ok-weak);color:var(--ok)}
+.cg.open{background:var(--accent-weak);color:var(--text)}
+.cd{position:absolute;bottom:3px;right:4px;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--skip)}
+.cd.done{background:var(--ok);border-color:var(--ok)}
+.cd.open{border-color:var(--text)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:10px;font-size:12px;color:var(--muted)}
+.legend b{color:var(--text)}
+
+/* editor */
+.enode{margin:10px 0 0}
+.enode.grp.child{padding:10px 0 4px 10px;border-left:3px solid var(--accent-weak)}
+.enode.ex-n{padding:10px;border:1px solid var(--line);border-radius:8px}
+.ctl{display:flex;gap:2px;flex:none}
+.ctl button{width:36px;height:36px;border-radius:8px;color:var(--muted);font-size:17px}
+.ctl button:active{background:var(--accent-weak)}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 2px}
+.sub{margin-top:6px}
+.prev{margin:0 0 8px;padding:8px 10px;border-radius:8px;background:var(--bg);font-size:14px}
+.prev b{display:block;margin-bottom:2px}
+
+/* tabs, sheet, toast */
+#tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+#tabs button{flex:1;min-height:58px;font-size:13px;font-weight:600;color:var(--muted);position:relative}
+#tabs button.on{color:var(--text)}
+#tabs button.on::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--accent);border-radius:0 0 3px 3px}
+.backdrop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:680px;max-height:82vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom))}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;min-height:52px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;margin:0 0 8px}
+.opt.on{border-color:var(--accent);background:var(--accent-weak)}
+.opt small{display:block;color:var(--muted);font-size:13px}
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600;max-width:90vw}
+.empty{padding:18px;text-align:center;color:var(--muted)}
+.sess-line{font-size:14px;margin:2px 0}
+.sess-line .m{color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.backdrop:not(.still){animation:fade .15s ease-out}.backdrop:not(.still) .sheet{animation:up .18s ease-out}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes up{from{transform:translateY(24px)}to{transform:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<nav id="tabs" aria-label="Sections">
+  <button data-act="tab" data-tab="today">Workout</button>
+  <button data-act="tab" data-tab="groups">Groups</button>
+  <button data-act="tab" data-tab="history">History</button>
+</nav>
+<div id="sheet-root"></div>
+<div id="toast-root"></div>
+<input type="file" id="import-file" accept="application/json,.json" hidden data-ch="import">
+
+<script>
+(function(){
+'use strict';
+
+/* ───────── constants & helpers ───────── */
+var STORE_KEY='workout-tracker-v3';
+var DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var TREND_N=6;
+var storageOk=true;
+
+function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function pad(n){return String(n).padStart(2,'0');}
+function toISO(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function fromISO(s){var p=s.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);}
+function dow(iso){return fromISO(iso).getDay();}                    // Sun=0 … Sat=6
+function addDays(iso,n){var d=fromISO(iso);d.setDate(d.getDate()+n);return toISO(d);}
+function today(){return toISO(new Date());}
+function weekStart(iso){return addDays(iso,-dow(iso));}
+function fmtShort(iso){return fromISO(iso).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}
+function fmtLong(iso){return fromISO(iso).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});}
+function fmtMD(iso){return fromISO(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'});}
+function byOrd(a,b){return a.ord-b.ord;}
+
+/* ───────── model ─────────
+   state = {
+     v:3,
+     groups:[ group tree ],
+     sessions:{ id:{ id,date,groupIds,picks,logs,status:'open'|'done',note,ord,manual,snap } }
+   }
+   A group holds exercises and sub-groups. An exercise has a name and an optional "form" cue.
+   A session is one workout on one date. You add groups to it by hand. `manual` sessions are
+   past days entered after the fact: nothing is auto-picked, and they never move a rotation. */
+function ex(name,form){return {id:uid(),kind:'exercise',name:name||'',form:form||''};}
+function grp(name,children,o){o=o||{};return {id:uid(),kind:'group',name:name||'',abbr:o.abbr||'',mode:o.mode||'all',pick:o.pick||1,pickMax:o.pickMax||null,children:children||[]};}
+function abbrOf(g){
+  if(g.abbr&&String(g.abbr).trim())return String(g.abbr).trim().slice(0,3);
+  var nm=(g.name||'').trim();if(!nm)return '?';
+  var w=nm.split(/\s+/);
+  if(w.length>1)return w.slice(0,3).map(function(x){return x.charAt(0).toUpperCase();}).join('');
+  return nm.charAt(0).toUpperCase()+nm.charAt(1).toLowerCase();
+}
+
+function sample(){
+  var leg1=grp('Leg 1',[ex('Back squat','Chest up, knees track over toes'),ex('Romanian deadlift','Back flat, hinge at the hips'),ex('Walking lunge'),ex('Standing calf raise')]);
+  var leg2=grp('Leg 2',[ex('Leg press'),ex('Leg curl'),ex('Step-up'),ex('Seated calf raise')]);
+  var upper=grp('Upper Body',[
+    grp('Back',[ex('Seated cable row','Keep back flat, squeeze shoulder blades'),ex('One-arm dumbbell row')],{mode:'cycle'}),
+    grp('Chest',[ex('Dumbbell bench press'),ex('Push-ups')],{mode:'cycle'})
+  ],{mode:'cycle'});
+  var core=grp('Core',[
+    grp('Plank',[ex('Forearm plank','Ribs down, glutes tight'),ex('Long-lever plank')],{mode:'cycle'}),
+    grp('Dead bug',[ex('Dead bug','Low back stays on the floor'),ex('Weighted dead bug')],{mode:'cycle'}),
+    grp('Side plank',[ex('Side plank'),ex('Side plank with hip dip')],{mode:'cycle'}),
+    grp('Bird dog',[ex('Bird dog','Hips level'),ex('Bird dog with row')],{mode:'cycle'})
+  ],{mode:'cycle',pick:2,pickMax:3});
+  var morning=grp('Morning',[
+    ex('Treadmill walk'),
+    ex('Mobility flow'),
+    grp('Banded',[ex('Banded pull-apart'),ex('Banded row'),ex('Banded good morning')],{mode:'cycle'})
+  ]);
+  return {v:3,groups:[leg1,leg2,upper,core,morning],sessions:{}};
+}
+function blank(){return {v:3,groups:[],sessions:{}};}
+function validState(s){
+  return !!(s&&typeof s==='object'&&s.v>=2&&Array.isArray(s.groups)&&s.sessions&&typeof s.sessions==='object');
+}
+/* v2 (the planner with an ideal week) → v3. The week, carry-over and skipped sessions are dropped. */
+function migrate(o){
+  var n={v:3,groups:JSON.parse(JSON.stringify(o.groups)),sessions:{}};
+  (function fix(list){list.forEach(function(g){
+    if(g.kind==='exercise'){g.form=g.form||g.guideline||'';delete g.guideline;}
+    else fix(g.children||[]);
+  });})(n.groups);
+  Object.keys(o.sessions||{}).forEach(function(k){
+    var s=o.sessions[k];if(!s||!s.date||s.status==='skipped'||s.status==='planned')return;
+    var c=JSON.parse(JSON.stringify(s));
+    ['place','track','seq','carried','dropped','slot','doneAt'].forEach(function(f){delete c[f];});
+    c.id=k;c.groupIds=c.groupIds||[];c.picks=c.picks||{};c.logs=c.logs||{};c.note=c.note||'';
+    c.status=c.status==='done'?'done':'open';
+    n.sessions[k]=c;
+  });
+  return n;
+}
+function normalize(s){
+  if(s.v<3)s=migrate(s);
+  Object.keys(s.sessions).forEach(function(k){
+    var x=s.sessions[k];x.groupIds=x.groupIds||[];x.picks=x.picks||{};x.logs=x.logs||{};x.snap=x.snap||{};
+  });
+  return s;
+}
+var state=load();
+function load(){
+  try{
+    var raw=localStorage.getItem(STORE_KEY);
+    if(raw){var s=JSON.parse(raw);if(validState(s))return normalize(s);}
+  }catch(e){storageOk=false;}
+  return blank();
+}
+function save(){try{localStorage.setItem(STORE_KEY,JSON.stringify(state));}catch(e){storageOk=false;}}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+
+function getGroup(id){return state.groups.find(function(g){return g.id===id;})||null;}
+function findNode(id){
+  function walk(n,parent){
+    if(n.id===id)return {node:n,parent:parent};
+    var kids=n.children||[];
+    for(var i=0;i<kids.length;i++){var r=walk(kids[i],n);if(r)return r;}
+    return null;
+  }
+  for(var i=0;i<state.groups.length;i++){var r=walk(state.groups[i],null);if(r)return r;}
+  return null;
+}
+/* ───────── rotation engine ─────────
+   A group is "all" (every child, every workout) or "cycle" (pick N children per workout, continuing
+   from the last child picked in the most recent *finished* workout, then wrapping). Open workouts and
+   hand-entered (manual) workouts never move a cycle. */
+function cursorOf(node,before){
+  var n=node.children.length;if(!n)return 0;
+  var done=Object.keys(state.sessions).map(function(k){return state.sessions[k];}).filter(function(s){
+    return s.status==='done'&&!s.manual&&s.ord<before&&s.picks&&s.picks[node.id]&&s.picks[node.id].length;
+  }).sort(function(a,b){return b.ord-a.ord;});
+  for(var i=0;i<done.length;i++){
+    var p=done[i].picks[node.id];var last=p[p.length-1];
+    var idx=node.children.findIndex(function(c){return c.id===last;});
+    if(idx>=0)return (idx+1)%n;
+  }
+  return 0;
+}
+function pickIds(node,cursor,count){
+  var n=node.children.length;count=Math.max(1,Math.min(count,n));
+  var out=[];for(var i=0;i<count;i++)out.push(node.children[(cursor+i)%n].id);return out;
+}
+function fill(node,picks,reach,cf,manual){
+  if(node.kind!=='group')return;
+  var kids=node.children;if(!kids.length)return;
+  if(node.mode==='cycle'){
+    var cur=(picks[node.id]||[]).filter(function(id){return kids.some(function(c){return c.id===id;});});
+    if(!cur.length&&!manual)cur=pickIds(node,cf(node),node.pick||1);
+    picks[node.id]=cur;reach[node.id]=1;
+    cur.forEach(function(id){fill(kids.find(function(c){return c.id===id;}),picks,reach,cf,manual);});
+  }else{
+    kids.forEach(function(c){fill(c,picks,reach,cf,manual);});
+  }
+}
+function resolvePicks(groupIds,existing,before,manual){
+  var picks=Object.assign({},existing||{});var reach={};
+  var cf=function(n){return cursorOf(n,before);};
+  groupIds.forEach(function(id){var g=getGroup(id);if(g)fill(g,picks,reach,cf,manual);});
+  Object.keys(picks).forEach(function(k){if(!reach[k])delete picks[k];});
+  return picks;
+}
+function pickedKids(node,picks){
+  if(node.mode!=='cycle')return node.children;
+  return (picks[node.id]||[]).map(function(id){return node.children.find(function(c){return c.id===id;});}).filter(Boolean);
+}
+function leavesOf(node,picks){
+  if(node.kind==='exercise')return [node];
+  var out=[];pickedKids(node,picks).forEach(function(c){out=out.concat(leavesOf(c,picks));});return out;
+}
+function leafItems(node,picks,path){
+  path=path||[];
+  if(node.kind==='exercise')return [{id:node.id,label:path.concat([node.name||'(unnamed)']).join(' › ')}];
+  var out=[];
+  pickedKids(node,picks).forEach(function(c){
+    out=out.concat(leafItems(c,picks,c.kind==='group'?path.concat([c.name||'(unnamed)']):path));
+  });
+  return out;
+}
+function leafLines(node,picks){return leafItems(node,picks,[]).map(function(i){return i.label;});}
+function simulate(top,count){
+  var sim={},out=[];
+  for(var i=0;i<count;i++){
+    var picks={},reach={};
+    fill(top,picks,reach,function(n){return (n.id in sim)?sim[n.id]:cursorOf(n,Infinity);},false);
+    out.push(leafLines(top,picks));
+    Object.keys(picks).forEach(function(id){
+      var f=findNode(id);if(!f)return;
+      var ids=picks[id],last=ids[ids.length-1];
+      var idx=f.node.children.findIndex(function(c){return c.id===last;});
+      sim[id]=(idx+1)%f.node.children.length;
+    });
+  }
+  return out;
+}
+function leafCount(node){
+  if(node.kind==='exercise')return 1;
+  return node.children.reduce(function(a,c){return a+leafCount(c);},0);
+}
+function summarize(g){
+  var n=g.children.length;
+  var noun=n&&g.children.every(function(c){return c.kind==='exercise';})?'exercise':'item';
+  var plural=n===1?noun:noun+'s';
+  if(!n)return 'Empty';
+  if(g.mode==='cycle'){
+    var p=(g.pick||1)+(g.pickMax&&g.pickMax>g.pick?'–'+g.pickMax:'');
+    return 'Rotates, '+p+' of '+n+' '+plural+' per workout';
+  }
+  return 'All '+n+' '+plural+' every workout';
+}
+
+/* ───────── sessions ───────── */
+function sessList(){return Object.keys(state.sessions).map(function(k){return state.sessions[k];});}
+function sessionsOn(date){return sessList().filter(function(s){return s.date===date;}).sort(byOrd);}
+function nextOrd(date){
+  var base=fromISO(date).getTime(),mx=base-1000;
+  sessList().forEach(function(s){if(s.date===date&&s.ord>mx)mx=s.ord;});
+  return mx+1000;
+}
+function nameOf(s,id){
+  var g=getGroup(id);
+  return g?(g.name||'Untitled'):((s.snap&&s.snap[id]&&s.snap[id].name)||'(deleted group)');
+}
+function refresh(s){
+  s.picks=resolvePicks(s.groupIds,s.picks,s.ord,s.manual);
+  s.snap=s.snap||{};
+  s.groupIds.forEach(function(id){var g=getGroup(id);if(g)s.snap[id]={name:g.name||'Untitled',abbr:abbrOf(g)};});
+  s.groupNames=s.groupIds.map(function(id){return nameOf(s,id);});
+}
+function newSession(date){
+  var s={id:'s'+uid(),date:date,groupIds:[],picks:{},logs:{},status:'open',note:'',manual:date<today(),snap:{},ord:nextOrd(date)};
+  state.sessions[s.id]=s;refresh(s);save();return s;
+}
+function labelFor(s){
+  var same=sessionsOn(s.date);
+  return same.length>1?'Workout '+(same.findIndex(function(x){return x.id===s.id;})+1):'Workout';
+}
+var STATUS_LABEL={open:'In progress',done:'Done'};
+
+function history(exId,before){
+  return sessList().filter(function(s){
+    return s.ord<before&&s.logs&&s.logs[exId]&&String(s.logs[exId].note||'').trim();
+  }).sort(function(a,b){return b.ord-a.ord;}).slice(0,TREND_N).map(function(s){
+    return {date:s.date,note:s.logs[exId].note.trim(),status:s.logs[exId].status||''};
+  });
+}
+
+/* ───────── UI state ───────── */
+var ui={tab:'today',date:today(),open:null,editGroup:null,sheet:null,focus:null,preview:false,trend:{},weeks:5,lastToday:today(),viewKey:''};
+
+/* ───────── shared bits ───────── */
+function badgeHTML(st){return '<span class="badge '+st+'">'+esc(STATUS_LABEL[st]||st)+'</span>';}
+function itemsOf(s){
+  var names=[],items=[];
+  s.groupIds.forEach(function(id){
+    names.push(nameOf(s,id));
+    var g=getGroup(id);if(g)items=items.concat(leafItems(g,s.picks,[]));
+  });
+  return {names:names,items:items};
+}
+function logLines(items,s){
+  var mk={done:'✓',partial:'½',skipped:'–'};
+  return items.map(function(it){
+    var l=s.logs[it.id]||{},note=String(l.note||'').trim();
+    return '<li'+(l.status==='skipped'?' class="sk"':'')+'><span class="mk '+(l.status||'')+'">'+(mk[l.status]||'')+'</span><b>'+esc(it.label)+'</b>'+(note?' <span class="nt">'+esc(note)+'</span>':'')+'</li>';
+  }).join('');
+}
+
+/* ───────── Workout (day view) ───────── */
+function todayView(){
+  var d=ui.date,t=today(),isToday=d===t,ws=weekStart(d);
+  var strip='';
+  for(var i=0;i<7;i++){
+    var dd=addDays(ws,i),dots='';
+    sessionsOn(dd).forEach(function(s){dots+='<i class="dot '+s.status+'"></i>';});
+    strip+='<button class="day'+(dd===d?' on':'')+(dd===t?' today':'')+'" data-act="pickDay" data-date="'+dd+'" aria-label="'+esc(fmtShort(dd))+'">'+
+      '<span class="dn">'+DAYS[i]+'</span><span class="dd">'+fromISO(dd).getDate()+'</span><span class="dots">'+(dots||'&nbsp;')+'</span></button>';
+  }
+  var html='<div class="row between"><h1>'+(isToday?'Today':esc(fmtLong(d)))+'</h1>'+
+    '<div class="row"><button class="btn ghost sm" data-act="dateShift" data-n="-7" aria-label="Previous week">‹</button>'+
+    '<button class="btn ghost sm" data-act="dateShift" data-n="7" aria-label="Next week">›</button></div></div>';
+  html+='<div class="row small muted" style="margin:-8px 0 10px;min-height:34px">'+(isToday?'<span>'+esc(fmtLong(d))+'</span>':'<button class="btn ghost sm" data-act="dateToday">Today</button>')+'</div>';
+  html+='<div class="strip">'+strip+'</div>';
+
+  if(isToday){
+    sessList().filter(function(s){return s.status==='open'&&s.date!==d;}).sort(byOrd).forEach(function(s){html+=sessionCard(s,true);});
+  }
+  var list=sessionsOn(d);
+  list.forEach(function(s){html+=sessionCard(s,false);});
+
+  if(d>t){
+    html+='<p class="small muted">Future days can be logged once they arrive.</p>';
+  }else if(!state.groups.length){
+    html+='<div class="card"><b>Start by creating a group</b><p class="muted small" style="margin:6px 0 10px">A group is a set of exercises, like "Leg 1" or "Core". You add groups to each workout as you go.</p>'+
+      '<button class="btn" data-act="tab" data-tab="groups">Go to Groups</button></div>';
+  }else{
+    var label=isToday?(list.length?'Start another workout':'Start workout'):'Log a past workout';
+    html+='<div class="card"><button class="btn block" data-act="startWorkout" data-date="'+d+'">'+label+'</button>'+
+      (isToday?'':'<p class="caption">Past days are entered by hand: you choose which exercises you did, and your rotations stay where they are.</p>')+'</div>';
+  }
+  return html;
+}
+function sessionCard(s,showDate){
+  var it=itemsOf(s);
+  return '<div class="card"><button style="display:block;width:100%;text-align:left" data-act="openSess" data-key="'+s.id+'">'+
+    '<div class="slot-h"><b>'+esc(labelFor(s))+'</b>'+badgeHTML(s.status)+(s.manual?'<span class="tag">By hand</span>':'')+(showDate?'<span class="small muted">'+esc(fmtMD(s.date))+'</span>':'')+'</div>'+
+    (it.names.length?'<div style="font-weight:700">'+esc(it.names.join(' + '))+'</div>':'<p class="small muted" style="margin:0">No groups added yet.</p>')+
+    '<ul class="lines" style="margin-bottom:0">'+logLines(it.items,s)+'</ul></button></div>';
+}
+
+/* ───────── workout view ───────── */
+function sess(){return ui.open?(state.sessions[ui.open]||null):null;}
+function sessionView(){
+  var s=sess();
+  if(!s){ui.open=null;return todayView();}
+  if(s.status==='open')refresh(s);
+  var leaves=[];s.groupIds.forEach(function(id){var g=getGroup(id);if(g)leaves=leaves.concat(leavesOf(g,s.picks));});
+  var logged=leaves.filter(function(l){return s.logs[l.id]&&s.logs[l.id].status;}).length;
+  var pct=leaves.length?Math.round(100*logged/leaves.length):0;
+  var names=s.groupIds.map(function(id){return nameOf(s,id);});
+  var html='<div class="row between"><button class="btn ghost sm" data-act="back">‹ Back</button>'+badgeHTML(s.status)+'</div>';
+  html+='<h1 style="margin-top:12px">'+(names.length?esc(names.join(' + ')):'New workout')+'</h1>';
+  html+='<div class="muted small" style="margin:-6px 0 12px">'+esc(labelFor(s))+', '+esc(fmtLong(s.date))+'</div>';
+  if(s.manual)html+='<p class="small muted" style="margin:0 0 10px">Entered by hand. Choose what you did in each rotating group. This will not move your rotations.</p>';
+  html+='<div class="progress" aria-label="'+logged+' of '+leaves.length+' logged"><i style="width:'+pct+'%"></i></div>';
+  s.groupIds.forEach(function(id){
+    var g=getGroup(id);
+    if(!g)html+='<div class="card"><div class="row between"><span class="muted">'+esc(nameOf(s,id))+' was deleted from your library.</span><button class="link" data-act="grpRemove" data-node="'+id+'">Remove</button></div></div>';
+    else html+=resNode(g,s,0,null);
+  });
+  if(!s.groupIds.length)html+='<div class="card empty">Add the groups you want to do today.</div>';
+  html+='<button class="btn sec block" data-act="addGroupSheet" style="margin:0 0 12px">+ Add group</button>';
+  html+='<div class="card"><h2>Workout notes</h2><textarea class="inp" data-in="snote" placeholder="How it felt, anything to change next time">'+esc(s.note||'')+'</textarea></div>';
+  html+='<div class="row wrap" style="margin-bottom:6px">';
+  if(s.status==='open'){
+    html+='<button class="btn full" data-act="finish">Finish workout</button>'+
+      '<button class="btn sec grow" data-act="markAll">Mark all done</button>';
+  }else{
+    html+='<button class="btn sec grow" data-act="reopen">Reopen</button>';
+  }
+  html+='</div><button class="link" data-act="discard">Discard this workout</button>';
+  return html;
+}
+function resNode(node,s,depth,pinfo){
+  if(node.kind==='exercise')return exCard(node,s,pinfo);
+  var kids=pickedKids(node,s.picks),cyc=node.mode==='cycle';
+  var swap=pinfo?swapBtn(s,pinfo):'';
+  var choose=(s.manual&&cyc&&node.children.length)?'<button class="link" data-act="pickKids" data-node="'+node.id+'">Choose</button>':'';
+  var head;
+  if(depth===0){
+    head='<div class="gh"><h3>'+esc(node.name||'Untitled')+'</h3><span class="row" style="gap:0">'+choose+
+      '<button class="link" data-act="grpRemove" data-node="'+node.id+'">Remove</button></span></div>';
+  }else head='<div class="subhead"><span>'+esc(node.name||'Untitled')+'</span><span class="row" style="gap:0">'+choose+swap+'</span></div>';
+  var cap='';
+  if(cyc&&node.children.length>1){
+    cap='<div class="cap">'+(s.manual?kids.length+' of '+node.children.length+' chosen':'Rotating: '+kids.length+' of '+node.children.length+' this workout')+'</div>';
+  }
+  var body=kids.map(function(c){return resNode(c,s,depth+1,cyc?{cycle:node,id:c.id}:null);}).join('');
+  var empty=s.manual&&cyc?'<p class="muted small">Tap Choose to pick what you did.</p>':'<p class="muted small">Nothing in this group yet.</p>';
+  var more='';
+  if(!s.manual&&cyc&&node.pickMax&&node.pickMax>kids.length&&node.children.length>kids.length){
+    more='<button class="btn sec sm" data-act="addAnother" data-node="'+node.id+'">+ Add another</button>';
+  }
+  return '<section class="gsec'+(depth?' nested':'')+'">'+head+cap+(body||empty)+more+'</section>';
+}
+function swapBtn(s,pinfo){
+  if(s.manual)return '';
+  var cyc=pinfo.cycle,picked=s.picks[cyc.id]||[];
+  var alts=cyc.children.filter(function(c){return picked.indexOf(c.id)<0;});
+  var removable=picked.length>(cyc.pick||1);
+  if(!alts.length&&!removable)return '';
+  return '<button class="link" data-act="swap" data-node="'+cyc.id+'" data-child="'+pinfo.id+'">Change</button>';
+}
+function exCard(node,s,pinfo){
+  var log=s.logs[node.id]||{},st=log.status||'';
+  var hist=history(node.id,s.ord),cur=String(log.note||'').trim(),trendHTML='';
+  if(hist.length){
+    var open=!!ui.trend[node.id],more=hist.length-1,tmk={partial:'½ ',skipped:'– '};
+    var label=open?'Previous notes':'Last '+esc(fmtMD(hist[0].date))+': '+esc(hist[0].note);
+    var head=more>0
+      ?'<button class="tg" data-act="toggleTrend" data-ex="'+node.id+'" aria-expanded="'+open+'">'+label+' <u>'+(open?'hide':'+'+more+' earlier')+'</u></button>'
+      :'<span class="tg">'+label+'</span>';
+    trendHTML='<div class="trend"><div class="tl">'+head+''+'</div>'+
+      (open&&more>0?'<ul>'+hist.map(function(h){return '<li><time>'+esc(fmtMD(h.date))+'</time><span>'+esc((tmk[h.status]||'')+h.note)+'</span></li>';}).join('')+'</ul>':'')+'</div>';
+  }
+  return '<div class="ex'+(st?' s-'+st:'')+'">'+
+    '<div class="row between" style="align-items:flex-start"><div><div class="ex-name">'+esc(node.name||'(unnamed)')+'</div>'+
+    (node.form?'<div class="ex-guide">'+esc(node.form)+'</div>':'')+'</div>'+(pinfo?swapBtn(s,pinfo):'')+'</div>'+
+    '<div class="st">'+[['done','Done'],['partial','Partial'],['skipped','Skipped']].map(function(x){
+      return '<button data-act="setSt" data-ex="'+node.id+'" data-st="'+x[0]+'" class="'+(st===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div>'+
+    '<input class="inp" data-in="lognote" data-ex="'+node.id+'" value="'+esc(log.note||'')+'" placeholder="Notes: weight used, sets done">'+trendHTML+'</div>';
+}
+
+/* ───────── Groups ───────── */
+function groupsView(){
+  var html='<div class="row between"><h1>Groups</h1><button class="btn sm" data-act="newGroup">+ New group</button></div>';
+  if(!state.groups.length){
+    html+='<div class="card empty">No groups yet. Create one and add exercises.<div style="margin-top:12px"><button class="btn sec sm" data-act="loadSample">Load example groups</button></div></div>';
+  }
+  state.groups.forEach(function(g){
+    html+='<div class="card"><button style="display:block;width:100%;text-align:left" data-act="editGroup" data-id="'+g.id+'">'+
+      '<div class="row between"><b style="font-size:18px">'+esc(g.name||'Untitled')+' <span class="tag">'+esc(abbrOf(g))+'</span></b><span class="link">Edit</span></div>'+
+      '<div class="muted small">'+esc(summarize(g))+'</div>'+
+      '<div class="muted small">'+leafCount(g)+' exercises total</div></button></div>';
+  });
+  return html;
+}
+function editorView(){
+  var g=getGroup(ui.editGroup);
+  if(!g){ui.editGroup=null;return groupsView();}
+  var html='<div class="row between"><button class="btn ghost sm" data-act="closeEdit">‹ Groups</button><button class="btn danger sm" data-act="delGroup">Delete group</button></div>';
+  html+='<h1 style="margin-top:12px">Edit group</h1><div class="card">'+editNode(g,null)+'</div>';
+  html+='<div class="card"><div class="row between"><h2 style="margin:0">Preview</h2><button class="btn sec sm" data-act="togglePreview">'+(ui.preview?'Hide':'Show next 6 workouts')+'</button></div>';
+  if(ui.preview){
+    html+='<p class="hint">What the next workouts would pull, continuing from your history.</p>';
+    simulate(g,6).forEach(function(lines,i){
+      html+='<div class="prev"><b>Workout '+(i+1)+'</b>'+(lines.length?lines.map(esc).join('<br>'):'<span class="muted">Nothing yet</span>')+'</div>';
+    });
+  }else html+='<p class="hint">Check that your rotations behave the way you intend.</p>';
+  html+='</div>';
+  return html;
+}
+function ctl(node){
+  return '<div class="ctl"><button aria-label="Move up" data-act="mv" data-node="'+node.id+'" data-dir="-1">↑</button>'+
+    '<button aria-label="Move down" data-act="mv" data-node="'+node.id+'" data-dir="1">↓</button>'+
+    '<button aria-label="Delete" data-act="rm" data-node="'+node.id+'">✕</button></div>';
+}
+function editNode(node,parent){
+  if(node.kind==='exercise'){
+    return '<div class="enode ex-n"><div class="row"><input class="inp grow" data-in="name" data-node="'+node.id+'" value="'+esc(node.name)+'" placeholder="Exercise name">'+ctl(node)+'</div>'+
+      '<input class="inp sub" data-in="form" data-node="'+node.id+'" value="'+esc(node.form)+'" placeholder="Form cue (optional), e.g. keep back flat"></div>';
+  }
+  var root=!parent,n=node.children.length;
+  var h='<div class="enode grp'+(root?'':' child')+'" style="'+(root?'margin-top:0':'')+'">';
+  h+='<div class="row">'+(root?'':'<span class="tag">Group</span>')+'<input class="inp grow" data-in="name" data-node="'+node.id+'" value="'+esc(node.name)+'" placeholder="'+(root?'Group name, e.g. Leg 1':'Sub-group name')+'">'+(root?'':ctl(node))+'</div>';
+  if(root){
+    h+='<div class="row wrap sub"><span class="small muted">Calendar code</span><input class="inp num" maxlength="3" data-in="abbr" data-node="'+node.id+'" value="'+esc(node.abbr||'')+'" placeholder="'+esc(abbrOf(Object.assign({},node,{abbr:''})))+'" aria-label="Calendar code, up to 3 characters"><span class="small muted">shown in the History calendar</span></div>';
+  }
+  h+='<div class="row wrap sub"><span class="small muted">Each workout</span><div class="seg" role="group">'+
+    '<button data-act="mode" data-node="'+node.id+'" data-mode="all" class="'+(node.mode==='all'?'on':'')+'">Do all</button>'+
+    '<button data-act="mode" data-node="'+node.id+'" data-mode="cycle" class="'+(node.mode==='cycle'?'on':'')+'">Rotate</button></div></div>';
+  if(node.mode==='cycle'){
+    h+='<div class="row wrap sub"><span class="small muted">Pick</span><input class="inp num" inputmode="numeric" data-ch="pick" data-node="'+node.id+'" value="'+(node.pick||1)+'" aria-label="Pick count">'+
+      '<span class="small muted">up to</span><input class="inp num" inputmode="numeric" data-ch="pickMax" data-node="'+node.id+'" value="'+(node.pickMax||'')+'" placeholder="same" aria-label="Maximum pick count"></div>';
+  }
+  var p=(node.pick||1)+(node.pickMax&&node.pickMax>node.pick?'–'+node.pickMax:'');
+  h+='<div class="hint">'+(node.mode==='cycle'
+    ?'Picks '+p+' of the '+n+' below each workout, continuing where you left off, then loops. It advances when you finish a workout.'
+    :'Every item below is part of every workout.')+'</div>';
+  node.children.forEach(function(c){h+=editNode(c,node);});
+  h+='<div class="row sub"><button class="btn sec sm" data-act="addEx" data-node="'+node.id+'">+ Exercise</button><button class="btn sec sm" data-act="addGrp" data-node="'+node.id+'">+ Sub-group</button></div></div>';
+  return h;
+}
+
+/* ───────── History ───────── */
+function calCell(d){
+  var codes='',dot='',ss=sessionsOn(d);
+  ss.forEach(function(s){
+    if(!s.groupIds.length){dot='<i class="cd '+s.status+'"></i>';return;}
+    s.groupIds.forEach(function(id){
+      var g=getGroup(id),code=g?abbrOf(g):((s.snap&&s.snap[id]&&s.snap[id].abbr)||'?');
+      codes+='<i class="cg '+s.status+'">'+esc(code)+'</i>';
+    });
+  });
+  var t=today();
+  var label=fmtShort(d)+(ss.length?': '+ss.map(function(s){return (s.groupNames||[]).join(' + ')+' ('+(STATUS_LABEL[s.status]||s.status).toLowerCase()+')';}).join(', '):': nothing logged');
+  return '<button class="cal-c'+(d===t?' today':'')+(d>t?' future':'')+'" data-act="calDay" data-date="'+d+'" aria-label="'+esc(label)+'">'+
+    '<span class="cn">'+(fromISO(d).getDate()===1?esc(fmtMD(d)):fromISO(d).getDate())+'</span><span class="cc">'+codes+'</span>'+dot+'</button>';
+}
+function calendarHTML(){
+  var t=today(),cur=weekStart(t),n=ui.weeks||5;
+  var html='<div class="cal" role="group" aria-label="Recent weeks">'+['S','M','T','W','T','F','S'].map(function(x){return '<span class="hd">'+x+'</span>';}).join('');
+  for(var w=n-1;w>=0;w--){
+    var ws=addDays(cur,-7*w);
+    for(var i=0;i<7;i++)html+=calCell(addDays(ws,i));
+  }
+  html+='</div>';
+  var lg=state.groups.map(function(g){return '<span><b>'+esc(abbrOf(g))+'</b> '+esc(g.name||'Untitled')+'</span>';}).join('');
+  html+='<div class="legend">'+lg+'</div>';
+  return html;
+}
+function historyView(){
+  var all=sessList().sort(function(a,b){return b.ord-a.ord;});
+  var html='<h1>History</h1>';
+  html+='<div class="card"><div class="row between" style="margin-bottom:10px"><h2 style="margin:0">Recent weeks</h2><button class="btn ghost sm" data-act="calMore">Show 4 earlier</button></div>'+calendarHTML()+'</div>';
+  var list=all.filter(function(s){return s.groupIds.length;}).slice(0,60);
+  if(!list.length)html+='<div class="card empty">Workouts show up here.</div>';
+  else html+='<h2 style="margin:16px 0 8px">Log</h2>';
+  var mark={done:'✓',partial:'½',skipped:'–'};
+  list.forEach(function(s){
+    var logs=s.logs||{};
+    var items=Object.keys(logs).map(function(id){return logs[id];}).filter(function(l){return l.status||String(l.note||'').trim();});
+    html+='<div class="card"><button style="display:block;width:100%;text-align:left" data-act="openFromHistory" data-key="'+s.id+'">'+
+      '<div class="slot-h"><b>'+esc(fmtShort(s.date))+'</b>'+badgeHTML(s.status)+(s.manual?'<span class="tag">By hand</span>':'')+'</div>'+
+      '<div style="font-weight:700;margin-bottom:4px">'+esc(s.groupIds.map(function(id){return nameOf(s,id);}).join(' + '))+'</div>'+
+      items.map(function(l){return '<div class="sess-line"'+(l.status==='skipped'?' style="text-decoration:line-through;opacity:.65"':'')+'>'+(mark[l.status]||'')+' '+esc(l.name||'')+(String(l.note||'').trim()?' <span class="m">'+esc(l.note)+'</span>':'')+'</div>';}).join('')+
+      (s.note?'<div class="sess-line m" style="margin-top:4px;color:var(--muted)">'+esc(s.note)+'</div>':'')+'</button></div>';
+  });
+  html+='<div class="card"><h2>Backup</h2><p class="small muted">Your data lives only in this browser on this device. Export a backup now and then, and use Import to restore it or move it to another device. Importing replaces everything here, groups and history.'+(storageOk?'':' <b style="color:var(--bad)">Saving is blocked in this browser right now, so changes will be lost on reload.</b>')+'</p>'+
+    '<div class="row wrap"><button class="btn sec sm" data-act="export">Export file</button><button class="btn sec sm" data-act="copyData">Copy to clipboard</button><button class="btn sec sm" data-act="importClick">Import file</button></div>'+
+    '<div class="row wrap" style="margin-top:10px"><button class="btn danger sm" data-act="resetAll">Erase everything</button></div></div>';
+  return html;
+}
+
+/* ───────── sheets ───────── */
+function sheetHTML(still){
+  var sh=ui.sheet;if(!sh)return '';
+  var s=sess();
+  var h='<div class="backdrop'+(still?' still':'')+'" data-act="closeSheetBg"><div class="sheet" role="dialog" aria-modal="true">';
+  if(sh.type==='add'&&s){
+    h+='<h2>Add groups to this workout</h2>';
+    if(!state.groups.length)h+='<p class="muted">Create a group first in the Groups tab.</p>';
+    state.groups.forEach(function(g){
+      var on=s.groupIds.indexOf(g.id)>=0;
+      h+='<button class="opt'+(on?' on':'')+'" data-act="addGroupPick" data-id="'+g.id+'"><span>'+esc(g.name||'Untitled')+'<small>'+esc(summarize(g))+'</small></span><b>'+(on?'✓':'')+'</b></button>';
+    });
+    h+='<button class="btn block" data-act="closeSheet">Done</button>';
+  }else if(sh.type==='swap'&&s){
+    var f=findNode(sh.node);
+    if(f){
+      var picked=s.picks[sh.node]||[];
+      var alts=f.node.children.filter(function(c){return picked.indexOf(c.id)<0;});
+      h+='<h2>Do something else instead</h2>';
+      alts.forEach(function(c){h+='<button class="opt" data-act="swapPick" data-new="'+c.id+'"><span>'+esc(c.name||'Untitled')+'<small>'+esc(c.kind==='group'?'Group':(c.form||''))+'</small></span></button>';});
+      if(picked.length>(f.node.pick||1))h+='<button class="opt" data-act="swapRemove"><span>Remove this one from the workout</span></button>';
+      h+='<button class="btn ghost block" data-act="closeSheet">Cancel</button>';
+    }
+  }else if(sh.type==='pick'&&s){
+    var pf=findNode(sh.node);
+    if(pf){
+      var cur=s.picks[sh.node]||[];
+      h+='<h2>What did you do in '+esc(pf.node.name||'this group')+'?</h2>';
+      pf.node.children.forEach(function(c){
+        var on=cur.indexOf(c.id)>=0;
+        h+='<button class="opt'+(on?' on':'')+'" data-act="togglePick" data-child="'+c.id+'"><span>'+esc(c.name||'Untitled')+'<small>'+esc(c.kind==='group'?'Group':(c.form||''))+'</small></span><b>'+(on?'✓':'')+'</b></button>';
+      });
+      h+='<button class="btn block" data-act="closeSheet">Done</button>';
+    }
+  }
+  return h+'</div></div>';
+}
+
+/* ───────── render ───────── */
+function currentView(){
+  if(ui.tab==='today')return ui.open?sessionView():todayView();
+  if(ui.tab==='groups')return ui.editGroup?editorView():groupsView();
+  return historyView();
+}
+function render(){
+  var key=ui.tab+'|'+(ui.open||'')+'|'+(ui.editGroup||'')+'|'+(ui.tab==='today'&&!ui.open?ui.date:'');
+  var y=window.scrollY,same=key===ui.viewKey;
+  var root=document.getElementById('sheet-root'),oldSheet=root.querySelector('.sheet');
+  var still=!!oldSheet,sy=oldSheet?oldSheet.scrollTop:0;
+  document.getElementById('app').innerHTML=currentView();
+  root.innerHTML=sheetHTML(still);
+  var newSheet=root.querySelector('.sheet');if(newSheet&&still)newSheet.scrollTop=sy;
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs button'),function(b){
+    b.classList.toggle('on',b.dataset.tab===ui.tab);
+  });
+  ui.viewKey=key;
+  window.scrollTo(0,same?y:0);
+  if(ui.focus){
+    var el=document.querySelector('[data-in="name"][data-node="'+ui.focus+'"]');
+    if(el){el.focus();if(el.select)el.select();}
+    ui.focus=null;
+  }
+}
+var toastTimer=null;
+function toast(msg){
+  var r=document.getElementById('toast-root');
+  r.innerHTML='<div id="toast" role="status">'+esc(msg)+'</div>';
+  clearTimeout(toastTimer);toastTimer=setTimeout(function(){r.innerHTML='';},2600);
+}
+
+/* ───────── actions ───────── */
+function setLog(s,id,patch){
+  var f=findNode(id);
+  var l=s.logs[id]||{};
+  Object.keys(patch).forEach(function(k){if(patch[k]===null)delete l[k];else l[k]=patch[k];});
+  if(f)l.name=f.node.name;
+  if(!l.status&&!String(l.note||'').trim())delete s.logs[id];else s.logs[id]=l;
+}
+function allLeaves(s){
+  var out=[];s.groupIds.forEach(function(id){var g=getGroup(id);if(g)out=out.concat(leavesOf(g,s.picks));});return out;
+}
+function markAllLeaves(s){allLeaves(s).forEach(function(l){if(!(s.logs[l.id]&&s.logs[l.id].status))setLog(s,l.id,{status:'done'});});}
+function dropLogsFor(s,node){leavesOf(node,s.picks).forEach(function(l){delete s.logs[l.id];});}
+
+function removeGroup(s,id){
+  if(s.groupIds.indexOf(id)<0)return;
+  var g=getGroup(id);
+  var any=g&&leavesOf(g,s.picks).some(function(l){var x=s.logs[l.id];return x&&(x.status||String(x.note||'').trim());});
+  if(any&&!confirm('This group has logged exercises. Remove it and discard them?'))return;
+  if(g)dropLogsFor(s,g);
+  s.groupIds=s.groupIds.filter(function(x){return x!==id;});
+  refresh(s);save();render();
+}
+
+var ACTIONS={
+  tab:function(d){ui.tab=d.tab;ui.sheet=null;render();},
+  dateShift:function(d){ui.date=addDays(ui.date,+d.n);render();},
+  dateToday:function(){ui.date=today();render();},
+  pickDay:function(d){ui.date=d.date;render();},
+  calDay:function(d){ui.tab='today';ui.date=d.date;ui.open=null;render();},
+  calMore:function(){ui.weeks+=4;render();},
+
+  startWorkout:function(d){
+    if(d.date>today())return;
+    var s=newSession(d.date);ui.open=s.id;ui.sheet={type:'add'};render();
+  },
+  openSess:function(d){ui.open=d.key;render();},
+  openFromHistory:function(d){var s=state.sessions[d.key];if(!s)return;ui.tab='today';ui.date=s.date;ui.open=d.key;render();},
+  back:function(){ui.open=null;render();},
+  toggleTrend:function(d){ui.trend[d.ex]=!ui.trend[d.ex];render();},
+  closeSheet:function(){ui.sheet=null;render();},
+  closeSheetBg:function(d,t,e){if(e.target===t){ui.sheet=null;render();}},
+
+  addGroupSheet:function(){ui.sheet={type:'add'};render();},
+  addGroupPick:function(d){
+    var s=sess();if(!s||!getGroup(d.id))return;
+    if(s.groupIds.indexOf(d.id)>=0){removeGroup(s,d.id);return;}
+    s.groupIds.push(d.id);refresh(s);save();render();
+  },
+  grpRemove:function(d){var s=sess();if(s)removeGroup(s,d.node);},
+  setSt:function(d){
+    var s=sess();if(!s)return;
+    var cur=(s.logs[d.ex]||{}).status;
+    setLog(s,d.ex,{status:cur===d.st?null:d.st});save();render();
+  },
+  markAll:function(){var s=sess();if(!s)return;markAllLeaves(s);save();render();},
+  finish:function(){
+    var s=sess();if(!s)return;
+    if(!s.groupIds.length){toast('Add a group first, or discard this workout.');return;}
+    s.status='done';s.doneAt=Date.now();save();ui.open=null;render();toast('Workout saved');
+  },
+  reopen:function(){var s=sess();if(!s)return;s.status='open';refresh(s);save();render();},
+  discard:function(){
+    var s=sess();if(!s)return;
+    if((s.groupIds.length||Object.keys(s.logs).length)&&!confirm('Discard this workout and everything you logged in it?'))return;
+    delete state.sessions[s.id];ui.open=null;save();render();
+  },
+  swap:function(d){ui.sheet={type:'swap',node:d.node,child:d.child};render();},
+  swapPick:function(d){
+    var s=sess(),sh=ui.sheet,f=findNode(sh.node);if(!s||!f)return;
+    var arr=s.picks[sh.node],pos=arr?arr.indexOf(sh.child):-1;if(pos<0)return;
+    var old=f.node.children.find(function(c){return c.id===sh.child;});
+    if(old)dropLogsFor(s,old);
+    arr[pos]=d.new;refresh(s);save();ui.sheet=null;render();
+  },
+  swapRemove:function(){
+    var s=sess(),sh=ui.sheet,f=findNode(sh.node);if(!s||!f)return;
+    var arr=s.picks[sh.node],pos=arr?arr.indexOf(sh.child):-1;if(pos<0)return;
+    var old=f.node.children.find(function(c){return c.id===sh.child;});
+    if(old)dropLogsFor(s,old);
+    arr.splice(pos,1);refresh(s);save();ui.sheet=null;render();
+  },
+  addAnother:function(d){
+    var s=sess(),f=findNode(d.node);if(!s||!f)return;
+    var n=f.node,cur=s.picks[n.id]||[],kids=n.children;
+    var idx=cur.length?kids.findIndex(function(c){return c.id===cur[cur.length-1];}):-1;
+    for(var i=1;i<=kids.length;i++){var c=kids[(idx+i+kids.length)%kids.length];if(cur.indexOf(c.id)<0){cur.push(c.id);break;}}
+    s.picks[n.id]=cur;refresh(s);save();render();
+  },
+  pickKids:function(d){ui.sheet={type:'pick',node:d.node};render();},
+  togglePick:function(d){
+    var s=sess(),sh=ui.sheet,f=sh&&findNode(sh.node);if(!s||!f)return;
+    var n=f.node,cur=(s.picks[n.id]||[]).slice(),i=cur.indexOf(d.child);
+    var child=n.children.find(function(c){return c.id===d.child;});if(!child)return;
+    if(i>=0){dropLogsFor(s,child);cur.splice(i,1);}
+    else cur.push(d.child);
+    cur.sort(function(a,b){
+      return n.children.findIndex(function(c){return c.id===a;})-n.children.findIndex(function(c){return c.id===b;});
+    });
+    s.picks[n.id]=cur;refresh(s);save();render();
+  },
+
+  newGroup:function(){var g=grp('',[ex('','')]);state.groups.push(g);save();ui.editGroup=g.id;ui.preview=false;ui.focus=g.id;render();},
+  editGroup:function(d){ui.editGroup=d.id;ui.preview=false;render();},
+  closeEdit:function(){ui.editGroup=null;render();},
+  delGroup:function(){
+    var g=getGroup(ui.editGroup);if(!g)return;
+    if(!confirm('Delete "'+(g.name||'Untitled')+'"? Past workouts keep their logged notes.'))return;
+    state.groups=state.groups.filter(function(x){return x.id!==g.id;});
+    ui.editGroup=null;save();render();
+  },
+  loadSample:function(){
+    if(state.groups.length&&!confirm('Add the example groups to your library?'))return;
+    state.groups=state.groups.concat(sample().groups);save();render();toast('Example groups added');
+  },
+  togglePreview:function(){ui.preview=!ui.preview;render();},
+  mode:function(d){var f=findNode(d.node);if(!f)return;f.node.mode=d.mode;save();render();},
+  addEx:function(d){var f=findNode(d.node);if(!f)return;var e=ex('','');f.node.children.push(e);save();ui.focus=e.id;render();},
+  addGrp:function(d){var f=findNode(d.node);if(!f)return;var g=grp('',[ex('','')],{mode:'cycle'});f.node.children.push(g);save();ui.focus=g.id;render();},
+  mv:function(d){
+    var f=findNode(d.node);if(!f||!f.parent)return;
+    var a=f.parent.children,i=a.indexOf(f.node),j=i+(+d.dir);
+    if(j<0||j>=a.length)return;
+    var t=a[i];a[i]=a[j];a[j]=t;save();render();
+  },
+  rm:function(d){
+    var f=findNode(d.node);if(!f||!f.parent)return;
+    if(f.node.kind==='group'&&f.node.children.length&&!confirm('Delete this sub-group and everything in it?'))return;
+    f.parent.children=f.parent.children.filter(function(c){return c.id!==d.node;});
+    save();render();
+  },
+
+  export:function(){
+    var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='workouts-'+today()+'.json';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  },
+  copyData:function(){
+    var txt=JSON.stringify(state);
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){toast('Copied to clipboard');},function(){toast('Could not copy. Use Export file instead.');});
+    }else toast('Could not copy. Use Export file instead.');
+  },
+  importClick:function(){document.getElementById('import-file').click();},
+  resetAll:function(){
+    if(!confirm('Erase all groups and history? This cannot be undone.'))return;
+    state=blank();save();ui.open=null;ui.editGroup=null;render();toast('Erased');
+  }
+};
+
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-act]');if(!t)return;
+  var h=ACTIONS[t.dataset.act];if(h)h(t.dataset,t,e);
+});
+document.addEventListener('input',function(e){
+  var t=e.target,k=t.dataset&&t.dataset.in;if(!k)return;
+  if(k==='name'||k==='form'||k==='abbr'){
+    var f=findNode(t.dataset.node);
+    if(f){f.node[k]=(k==='abbr'?t.value.slice(0,3):t.value);save();}
+  }else if(k==='lognote'){
+    var s=sess();if(s){setLog(s,t.dataset.ex,{note:t.value});save();}
+  }else if(k==='snote'){
+    var s2=sess();if(s2){s2.note=t.value;save();}
+  }
+});
+document.addEventListener('change',function(e){
+  var t=e.target,k=t.dataset&&t.dataset.ch;if(!k)return;
+  if(k==='import'){
+    var file=t.files&&t.files[0];if(!file)return;
+    var r=new FileReader();
+    r.onload=function(){
+      try{
+        var s=JSON.parse(r.result);
+        if(!validState(s))throw new Error('bad');
+        if(!confirm('Replace your current groups and history with this backup?'))return;
+        state=normalize(s);save();ui.open=null;ui.editGroup=null;render();toast('Backup imported');
+      }catch(err){toast('That file is not a valid backup.');}
+      t.value='';
+    };
+    r.readAsText(file);return;
+  }
+  var f=findNode(t.dataset.node);if(!f)return;
+  var n=f.node;
+  if(k==='pick'){
+    n.pick=Math.max(1,parseInt(t.value,10)||1);
+    if(n.pickMax&&n.pickMax<=n.pick)n.pickMax=null;
+  }else if(k==='pickMax'){
+    var v=parseInt(t.value,10);n.pickMax=(v&&v>(n.pick||1))?v:null;
+  }
+  save();render();
+});
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'&&ui.lastToday!==today()){
+    if(ui.date===ui.lastToday)ui.date=today();
+    ui.lastToday=today();render();
+  }
+});
+
+window.__WT={get state(){return state;},set state(v){state=v;},ui:ui,ACTIONS:ACTIONS,render:render,sample:sample,migrate:migrate};
+render();
+})();
+</script>
+</body></html>
